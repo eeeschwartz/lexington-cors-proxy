@@ -28,6 +28,24 @@ server.register({
   if (error) server.log('error', error)
 })
 
+var transformMapitData = function(err, res, request, reply, settings, ttl){
+    var body = '';
+
+    res.on('data', function (chunk) {
+        body += chunk;
+    });
+
+    res.on('end', function () {
+        var suggestions = [];
+        JSON.parse(body).forEach(function(value) {
+          suggestions.push({text: value, isCollection: false});
+        });
+        var response = {"suggestions": suggestions};
+        console.log(response);
+        reply(response);
+    });
+}
+
 // proxy route
 proxy.route({
   method: '*',
@@ -55,11 +73,67 @@ proxy.route({
     file: 'public/index.html'
   }
 })
+
+var transformFindResponse = function(err, res, request, reply, settings, ttl){
+    var body = '';
+    console.log(res.statusCode);
+    console.log(err);
+
+    res.on('data', function (chunk) {
+        body += chunk;
+    });
+
+    res.on('end', function () {
+        // var locations = [];
+          // var response = body;
+
+        // JSON.parse(body).forEach(function(value) {
+        //   locations.push(value);
+        // })
+        // var response = {"locations": locations};
+        // console.log(response);
+        reply(body);
+    });
+}
+
 proxy.route({
   method: 'GET',
   path: '/suggest',
   handler: {
-    file: 'public/suggest/index.html'
+    proxy: {
+      passThrough: true,
+      // http://stackoverflow.com/questions/28263162/hapi-js-proxy-change-the-response-before-reply
+      onResponse: transformMapitData,
+      mapUri: function (request, callback) {
+        request.host = 'maps.lexingtonky.gov'
+        request.path = '/mapit/Map/GetSearchSuggestions'
+        request.headers['host'] = request.host
+        var query = request.url.search ? request.url.search : ''
+        query = query.replace('text', 'term');
+        console.log('proxy to http://' + request.host + request.path)
+        callback(null, 'http://' + request.host + request.path + query, request.headers)
+      }
+    }
+  }
+})
+
+proxy.route({
+  method: '*',
+  path: '/find',
+  handler: {
+    proxy: {
+      passThrough: true,
+      onResponse: transformFindResponse,
+      mapUri: function (request, callback) {
+        request.host = 'maps.lexingtonky.gov'
+        request.path = '/lfucggis/rest/services/addresses/MapServer/find'
+        request.headers['host'] = request.host
+        var query = '?contains=true&searchFields=&sr=&layers=0&layerDefs=&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&dynamicLayers=&returnZ=false&returnM=false&gdbVersion=&f=pjson'
+        query += '&searchText=1243 alexandria dr'
+        console.log('proxy to http://' + request.host + request.path)
+        callback(null, 'http://' + request.host + request.path + query, request.headers)
+      }
+    }
   }
 })
 proxy.route({
