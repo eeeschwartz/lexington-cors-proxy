@@ -9,6 +9,8 @@ var server = new Hapi.Server({})
 var port = parseInt(process.env.CORSPROXY_PORT || process.env.PORT || 1337, 10)
 var host = (process.env.CORSPROXY_HOST || 'localhost');
 var proxy = server.connection({ port: port, labels: ['proxy'], host: host})
+var zlib = require("zlib")
+
 
 server.register(require('inert'), function () {})
 server.register(require('h2o2'), function () {})
@@ -74,25 +76,27 @@ proxy.route({
   }
 })
 
+// http://stackoverflow.com/questions/12148948/how-do-i-ungzip-decompress-a-nodejs-requests-module-gzip-response-body
 var transformFindResponse = function(err, res, request, reply, settings, ttl){
-    var body = '';
-    console.log(res.statusCode);
-    console.log(err);
+   var buffer = [];
+   var gunzip = zlib.createGunzip();
+   res.pipe(gunzip);
 
-    res.on('data', function (chunk) {
-        body += chunk;
+    gunzip.on('data', function (chunk) {
+        buffer.push(chunk.toString())
     });
 
-    res.on('end', function () {
-        // var locations = [];
-          // var response = body;
+    gunzip.on('end', function () {
+        var locations = [];
+        var response = '';
 
-        // JSON.parse(body).forEach(function(value) {
-        //   locations.push(value);
-        // })
-        // var response = {"locations": locations};
-        // console.log(response);
-        reply(body);
+        var locations = [];
+        JSON.parse(buffer.join("")).results.forEach(function (loc) {
+          locations.push({feature: loc});
+        });;
+        var response = {"locations": locations};
+        console.log(response);
+        reply(response);
     });
 }
 
@@ -117,6 +121,16 @@ proxy.route({
   }
 })
 
+function getQueryVariable(query, variable) {
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
+        if (decodeURIComponent(pair[0]) == variable) {
+            return decodeURIComponent(pair[1]);
+        }
+    }
+}
+
 proxy.route({
   method: '*',
   path: '/find',
@@ -128,9 +142,9 @@ proxy.route({
         request.host = 'maps.lexingtonky.gov'
         request.path = '/lfucggis/rest/services/addresses/MapServer/find'
         request.headers['host'] = request.host
-        var query = '?contains=true&searchFields=&sr=&layers=0&layerDefs=&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&dynamicLayers=&returnZ=false&returnM=false&gdbVersion=&f=pjson'
-        query += '&searchText=1243 alexandria dr'
-        console.log('proxy to http://' + request.host + request.path)
+        var query = '?contains=true&searchFields=&sr=4326&layers=0&layerDefs=&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&dynamicLayers=&returnZ=false&returnM=false&gdbVersion=&f=pjson'
+        query += '&searchText=' + getQueryVariable(request.url.search, 'text');
+        console.log('proxy to http://' + request.host + request.path + query)
         callback(null, 'http://' + request.host + request.path + query, request.headers)
       }
     }
