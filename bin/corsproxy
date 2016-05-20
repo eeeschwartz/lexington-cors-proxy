@@ -57,6 +57,13 @@ proxy.route({
 })
 proxy.route({
   method: 'GET',
+  path: '/suggest',
+  handler: {
+    file: 'public/suggest/index.html'
+  }
+})
+proxy.route({
+  method: 'GET',
   path: '/favicon.ico',
   handler: {
     file: 'public/favicon.ico'
