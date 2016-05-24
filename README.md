@@ -28,6 +28,10 @@ To access another domain, use the domain name (including port) as the first fold
 - http://localhost:1337/my.domain.com/path/to/resource
 - etc etc
 
+## Deployed on heroku
+
+https://lexington-geocode-proxy.herokuapp.com/
+
 ## License
 
 MIT
