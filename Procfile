@@ -1,1 +1,1 @@
-web: CORSPROXY_PORT=80 bin/corsproxy
+web: CORSPROXY_HOST=0.0.0.0 bin/corsproxy
