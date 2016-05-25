@@ -75,6 +75,21 @@ proxy.route({
     file: 'public/index.html'
   }
 })
+//
+// var transformFindResponse = function(err, res, request, reply, settings, ttl){
+//   var fs = require('fs');
+//   fs.readFile('findresponse.json', function(err, buf) {
+//     console.log(buf.toString());
+//     reply(buf.toString());
+//   });
+// }
+
+var hardCodedExtent = {
+  "xmin":-84.501856000000004,
+  "ymin":38.033634999999997,
+  "xmax":-84.499855999999994,
+  "ymax":38.035634999999999
+};
 
 // http://stackoverflow.com/questions/12148948/how-do-i-ungzip-decompress-a-nodejs-requests-module-gzip-response-body
 var transformFindResponse = function(err, res, request, reply, settings, ttl){
@@ -92,7 +107,7 @@ var transformFindResponse = function(err, res, request, reply, settings, ttl){
 
         var locations = [];
         JSON.parse(buffer.join("")).results.forEach(function (loc) {
-          locations.push({feature: loc});
+          locations.push({feature: loc, extent: hardCodedExtent});
         });;
         var response = {"locations": locations};
         console.log(response);
