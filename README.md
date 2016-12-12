@@ -28,9 +28,13 @@ To access another domain, use the domain name (including port) as the first fold
 - http://localhost:1337/my.domain.com/path/to/resource
 - etc etc
 
-## Deployed on heroku
+## For Lexington to deploy on Heroku:
 
-https://lexington-geocode-proxy.herokuapp.com/
+* Create heroku app with URL: 'lexington-cors-proxy'
+* From local dev machine: `git push heroku master`
+* `heroku config:set CORSANYWHERE_WHITELIST='lfucg.github.io','http://localhost:.*','.*lexky-d8.pantheonsite.io','.*lexingtonky.formstack.com','.*\.lexingtonky\.gov'`
+* To send CORS requests to https://www.citygram.org/subscriptions`, you use `https://lexington-cors-proxy.herokuapp.com/www.citygram.org/subscriptions`
+
 
 ## License
 
